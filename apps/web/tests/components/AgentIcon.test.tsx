@@ -71,6 +71,12 @@ describe('AgentIcon', () => {
     expect(markup).toContain('src="/agent-icons/pi.svg"');
     expect(markup).not.toContain('agent-icon-mono');
   });
+  it('renders OMP using the shared Pi color-baked <img>', () => {
+    const markup = renderToStaticMarkup(<AgentIcon id="omp" size={24} />);
+
+    expect(markup).toContain('src="/agent-icons/pi.svg"');
+    expect(markup).not.toContain('agent-icon-mono');
+  });
 
   it('renders AMR as the bundled color SVG instead of the fallback initial', () => {
     const amrSvg = readFileSync(

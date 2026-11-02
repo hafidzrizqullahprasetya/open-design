@@ -63,6 +63,9 @@ const AGENT_INSTALL_LINKS: Record<
     installUrl: 'https://github.com/nexu-io/open-design/blob/main/docs/agent-adapters.md',
     docsUrl: 'https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/README.md',
   },
+  omp: {
+    docsUrl: 'https://github.com/can1357/oh-my-pi',
+  },
   kiro: {
     installUrl: 'https://kiro.dev',
     docsUrl: 'https://kiro.dev/docs/cli/',

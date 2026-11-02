@@ -8,6 +8,8 @@ const AGENT_LABELS: Record<string, string> = {
   kimi: 'Kimi CLI',
   kiro: 'Kiro',
   opencode: 'OpenCode',
+  omp: 'Oh My Pi',
+  pi: 'Pi',
   amr: 'OpenDesign',
   'cursor-agent': 'Cursor',
   cursor: 'Cursor',
@@ -30,6 +32,7 @@ const AGENT_LABELS: Record<string, string> = {
 const AGENT_ALIASES: Record<string, string> = {
   'amp cli': 'amp',
   'claude code': 'claude',
+  'oh my pi': 'omp',
   'codex cli': 'codex',
   'devin for terminal': 'devin',
   'gemini cli': 'gemini',

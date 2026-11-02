@@ -1,10 +1,11 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { test } from 'vitest';
 import {
-  AGENT_DEFS, aider, antigravity, assert, claude, codex, copilot, cursorAgent, deepseek, devin, detectAgents, grokBuild, join, kilo, kimi, kiro, mkdtempSync, opencode, pi, qoder, qwen, rmSync, spawnEnvForAgent, tmpdir, vibe, writeFileSync, chmodSync,
+  AGENT_DEFS, aider, antigravity, assert, claude, codex, copilot, cursorAgent, deepseek, devin, detectAgents, grokBuild, join, kilo, kimi, kiro, mkdtempSync, omp, opencode, pi, qoder, qwen, rmSync, spawnEnvForAgent, tmpdir, vibe, writeFileSync, chmodSync,
 } from './helpers/test-helpers.js';
 import { writeAntigravityModelSelection } from '../../src/runtimes/defs/antigravity.js';
 import { parseOpenCodeModels } from '../../src/runtimes/defs/opencode.js';
+import { parseOmpModels } from '../../src/runtimes/defs/omp.js';
 import { agentCapabilities } from '../../src/runtimes/capabilities.js';
 import {
   getRememberedLiveModels,
@@ -421,6 +422,89 @@ test('pi fetchModels reads the model table from stdout', async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+test('omp args use rpc mode without --no-session and append model/thinking options', () => {
+  const baseArgs = omp.buildArgs('', [], [], {}, {});
+
+  assert.deepEqual(baseArgs, ['--mode', 'rpc']);
+  assert.ok(!baseArgs.includes('--no-session'), 'omp must not pass --no-session');
+  assert.equal(omp.promptViaStdin, true);
+  assert.equal(omp.streamFormat, 'pi-rpc');
+  assert.equal(omp.supportsImagePaths, true);
+
+  const withModel = omp.buildArgs('', [], [], { model: 'octane/ag/gemini-3.8-flash-high' }, {});
+  assert.deepEqual(withModel, [
+    '--mode',
+    'rpc',
+    '--model',
+    'octane/ag/gemini-3.8-flash-high',
+  ]);
+
+  const withThinking = omp.buildArgs('', [], [], { reasoning: 'high' }, {});
+  assert.deepEqual(withThinking, [
+    '--mode',
+    'rpc',
+    '--thinking',
+    'high',
+  ]);
+
+  const withDirs = omp.buildArgs('', [], ['/tmp/allowed-1', '/tmp/allowed-2'], {}, {});
+  assert.deepEqual(withDirs, [
+    '--mode',
+    'rpc',
+    '--add-dir',
+    '/tmp/allowed-1',
+    '--add-dir',
+    '/tmp/allowed-2',
+  ]);
+});
+
+test('omp fetchModels reads the models JSON from stdout', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'od-omp-models-'));
+  try {
+    const bin = join(dir, process.platform === 'win32' ? 'omp.cmd' : 'omp');
+    const sampleJson = JSON.stringify({
+      models: [
+        {
+          provider: 'octane',
+          id: 'ag/gemini-3.8-flash-high',
+          selector: 'octane/ag/gemini-3.8-flash-high',
+          name: 'Gemini 3.8 Flash High',
+        },
+      ],
+    });
+    if (process.platform === 'win32') {
+      writeFileSync(
+        bin,
+        `@echo off\r\nif "%~1"=="models" if "%~2"=="--json" (\r\n  echo ${sampleJson}\r\n  exit /b 0\r\n)\r\nexit /b 1\r\n`,
+      );
+    } else {
+      writeFileSync(
+        bin,
+        `#!/bin/sh\nif [ "$1" = "models" ] && [ "$2" = "--json" ]; then\n  printf '%s\\n' '${sampleJson}'\n  exit 0\nfi\nexit 1\n`,
+      );
+      chmodSync(bin, 0o755);
+    }
+
+    assert.ok(omp.fetchModels, 'omp must define fetchModels');
+    const models = await omp.fetchModels(bin, {});
+
+    assert.deepEqual(models, [
+      { id: 'default', label: 'Default (CLI config)' },
+      {
+        id: 'octane/ag/gemini-3.8-flash-high',
+        label: 'Gemini 3.8 Flash High (octane)',
+      },
+    ]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('parseOmpModels returns null for empty or invalid output', () => {
+  assert.equal(parseOmpModels(''), null);
+  assert.equal(parseOmpModels('not-json'), null);
+  assert.equal(parseOmpModels('{"models":[]}'), null);
 });
 
 test('pi args do not pass resource directories as system-prompt files', () => {
